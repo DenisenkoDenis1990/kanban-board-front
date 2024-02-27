@@ -1,35 +1,94 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import { useState } from "react";
+import "./App.css";
+import {
+  Status,
+  initialData,
+  statuses,
+} from "./components/helpers/initial-data";
+import { TaskItem } from "./components/task-item/task-item";
+import { Task } from "./components/task-item/types";
 
 function App() {
-  const [count, setCount] = useState(0)
+  const [tasks, setTasks] = useState(initialData);
+  const [currenHover, setCurrentHover] = useState<string | null>(null);
+  const columns = statuses.map((status) => {
+    const tasksInColumn = tasks.filter((task) => task.status === status);
+    return {
+      status,
+      tasks: tasksInColumn,
+    };
+  });
+
+  const upDateTaskTitle = (task: Task, title: string) => {
+    updateTask({ ...task, title });
+  };
+  const upDateTaskStatus = (task: Task, status: Status) => {
+    updateTask({ ...task, status });
+  };
+
+  const updateTask = (task: Task) => {
+    const updatedTasks = tasks.map((item) =>
+      item.id === task.id ? task : item
+    );
+    setTasks(updatedTasks);
+  };
+
+  const deleteTask = (task: Task) => {
+    const updatedTasks = tasks.filter((item) => item.id !== task.id);
+    setTasks(updatedTasks);
+  };
+
+  const handleDropStatus = (e: React.DragEvent<HTMLDivElement>, id: string) => {
+    e.preventDefault();
+    setCurrentHover(null);
+    const dataId = e.dataTransfer.getData("id");
+    const task = tasks.find((item) => item.id === dataId);
+    if (task) {
+      upDateTaskStatus(task, id as Status);
+    }
+  };
+  const handleDragEnter = (id: string) => {
+    setCurrentHover(id);
+    console.log(currenHover, id);
+  };
 
   return (
-    <>
-      <div>
-        <a href="https://vitejs.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
+    <div
+      style={{
+        display: "flex",
+        justifyContent: "space-between",
+        alignItems: "flex-start",
+        gap: "20px",
+      }}
+    >
+      {columns.map((column) => {
+        return (
+          <div
+            key={column.status}
+            style={{
+              background: currenHover === column.status ? "red" : "",
+              display: "flex",
+              flexDirection: "column",
+              gap: "20px",
+            }}
+            onDrop={(e) => handleDropStatus(e, column.status)}
+            onDragOver={(e) => e.preventDefault()}
+            onDragEnter={() => handleDragEnter(column.status)}
+          >
+            <h1>{column.status.toUpperCase()}</h1>
+            {column.tasks.map((task) => (
+              <TaskItem
+                task={task}
+                key={task.id}
+                upDateTaskTitle={upDateTaskTitle}
+                deleteTask={deleteTask}
+              />
+            ))}
+          </div>
+        );
+      })}
+    </div>
+  );
 }
 
-export default App
+export default App;
